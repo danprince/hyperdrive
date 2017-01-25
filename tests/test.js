@@ -56,10 +56,6 @@ function test(name, func) {
   console.groupEnd(name);
 }
 
-test('Component', function() {
-  fail('Not tested');
-});
-
 test('parseTag', function() {
   deepEqual(
     'should parse single tag name',
@@ -203,7 +199,7 @@ test('events', function() {
   );
 });
 
-test('wildcards', function() {
+test('events:wildcards', function() {
   var flag = true;
 
   function surrender() {
@@ -254,6 +250,45 @@ test('render', function() {
     'should clean up if parent already has child',
     target,
     parent
+  );
+});
+
+test('Component', function() {
+  var Counter = Component({
+    state: 0,
+
+    render: function(props) {
+      return ['button', { id: 'button', onclick: this.increment }, this.state];
+    },
+
+    increment: function() {
+      this.transact(count => count + 1);
+    }
+  });
+
+  var container = document.createElement('div');
+
+  render(
+    [Counter],
+    container
+  );
+
+  var counter = container.children[0];
+
+  equal(
+    'should show initial state value',
+    counter.innerText,
+    '0'
+  );
+
+  counter.click();
+
+  var counter = container.children[0];
+
+  equal(
+    'should have incremented on click',
+    counter.innerText,
+    '1'
   );
 });
 

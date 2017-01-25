@@ -1,21 +1,28 @@
 function Component(component) {
-  return function (props, children) {
-    props = props || {};
+  return function(props) {
+    let instance = Object.create(component);
 
-    props.transact = function(func) {
-      var newState = func(props.state);
-      props.state = newState;
-      var element = component.render(props, children);
+    // autobinding
+    for (var key in component) {
+      if (typeof instance[key] === 'function') {
+        instance[key] = component[key].bind(instance);
+      }
+    }
+
+    var element = instance.render(props, instance);
+    var node = $element(element);
+
+    instance.state = component.state;
+    instance.props = props;
+
+    instance.transact = function(func) {
+      instance.state = func(instance.state);
+      var element = instance.render(props, instance);
       var newNode = $element(element);
 
       node.parentNode.replaceChild(newNode, node);
       node = newNode;
     };
-
-    props.state = component.state;
-
-    var element = component.render(props, children);
-    var node = $element(element);
 
     return [node];
   }

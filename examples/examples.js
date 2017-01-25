@@ -1,20 +1,20 @@
 var Counter = Component({
   state: 0,
-  render: function({ state, transact }) {
-    function inc() {
-      transact(count => count + 1);
-    }
-
-    function dec() {
-      transact(count => count - 1);
-    }
-
+  render: function(props) {
     return (
       ['div', null,
-        ['button', { onclick: dec }, '-'],
-        ['span', null, state],
-        ['button', { onclick: inc }, '+']]
+        ['button', { onclick: this.dec }, '-'],
+        ['span', null, this.state],
+        ['button', { onclick: this.inc }, '+']]
     );
+  },
+
+  inc: function() {
+    this.transact(count => count + 1);
+  },
+
+  dec: function() {
+    this.transact(count => count - 1);
   }
 });
 
