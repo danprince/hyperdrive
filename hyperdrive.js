@@ -197,7 +197,7 @@ function equalAttrs(nodeA, nodeB) {
 }
 
 // make mint jsx compatible
-function jsx(element, props, children) {
+function jsx(element, props, ...children) {
   return [element, props].concat(children);
 }
 
