@@ -292,3 +292,59 @@ test('Component', function() {
   );
 });
 
+test('Patching', function() {
+  var Counter = Component({
+    state: 0,
+
+    render: function(props) {
+      return (
+        ['div', null,
+          ['button', { id: 'button', onclick: this.increment }, '+'],
+          ['span', null, this.state]]
+      );
+    },
+
+    increment: function() {
+      this.transact(count => count + 1);
+    }
+  });
+
+  var container = document.createElement('div');
+
+  render(
+    [Counter],
+    container
+  );
+
+  var div = container.children[0];
+  var button = div.children[0];
+  var span = div.children[1];
+
+  button.click();
+
+  var newDiv = container.children[0];
+  var newButton = div.children[0];
+  var newSpan = div.children[1];
+
+  assert(
+    'outer div should have been reused',
+    div.isSameNode(newDiv)
+  );
+
+  assert(
+    'button should have been reused',
+    button.isSameNode(newButton)
+  );
+
+  assert(
+    'span should have been reused',
+    span.isSameNode(newSpan)
+  );
+
+  equal(
+    'text should have been updated',
+    '1',
+    span.innerText
+  );
+})
+

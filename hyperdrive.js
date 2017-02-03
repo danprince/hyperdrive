@@ -142,7 +142,7 @@ function render(element, parent) {
 // have changed. Probably use a full diff algorithm which spits out
 // patch objects to run later.
 function patch(nodeA, nodeB) {
-  if (nodeEqual(nodeA, nodeB)) {
+  if (equalNode(nodeA, nodeB)) {
     patchChildren(nodeA, nodeB);
     return nodeA;
   } else {
@@ -173,7 +173,7 @@ function patchChildren(nodeA, nodeB) {
   }
 }
 
-function nodeEqual(nodeA, nodeB) {
+function equalNode(nodeA, nodeB) {
   var TEXT_NODE = 3;
   if (nodeA.tagName !== nodeB.tagName) return false;
   if (nodeA.nodeType !== nodeB.nodeType) return false;
@@ -183,11 +183,10 @@ function nodeEqual(nodeA, nodeB) {
   if (nodeA.nodeType === TEXT_NODE && nodeB.nodeType === TEXT_NODE) {
     return nodeA.textContent === nodeB.textContent;
   }
-  return attributesEqual(nodeA, nodeB);
-  return true;
+  return equalAttrs(nodeA, nodeB);
 }
 
-function attributesEqual(nodeA, nodeB) {
+function equalAttrs(nodeA, nodeB) {
   for (var index = 0; index < nodeA.attributes.length; index++) {
     var attr = nodeA.attributes[index];
     if (nodeB.getAttribute(attr.nodeName) !== attr.nodeValue) {
