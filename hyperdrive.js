@@ -1,6 +1,6 @@
 function Component(component) {
   return function(props) {
-    let instance = Object.create(component);
+    var instance = Object.create(component);
 
     // autobinding
     for (var key in component) {
@@ -20,8 +20,9 @@ function Component(component) {
       var element = instance.render(props, instance);
       var newNode = $element(element);
 
-      node.parentNode.replaceChild(newNode, node);
-      node = newNode;
+      //node.parentNode.replaceChild(newNode, node);
+      //node = newNode;
+      node = patch(node, newNode);
     };
 
     return [node];
@@ -135,6 +136,65 @@ function render(element, parent) {
   }
 
   parent.appendChild(node);
+}
+
+// can be smarter about how we patch nodes if only their attributes
+// have changed. Probably use a full diff algorithm which spits out
+// patch objects to run later.
+function patch(nodeA, nodeB) {
+  if (nodeEqual(nodeA, nodeB)) {
+    patchChildren(nodeA, nodeB);
+    return nodeA;
+  } else {
+    nodeA.parentNode.replaceChild(nodeB, nodeA);
+    return nodeB;
+  }
+}
+
+function patchChildren(nodeA, nodeB) {
+  var as = nodeA.childNodes;
+  var bs = nodeB.childNodes;
+
+  for (var i = 0; i < Math.max(as.length, bs.length); i++) {
+    var a = as[i];
+    var b = bs[i];
+
+    if (a && b) {
+      patch(a, b);
+    }
+
+    else if (a) {
+      nodeA.removeChild(a);
+    }
+
+    else if (b) {
+      nodeA.appendChild(b);
+    }
+  }
+}
+
+function nodeEqual(nodeA, nodeB) {
+  var TEXT_NODE = 3;
+  if (nodeA.tagName !== nodeB.tagName) return false;
+  if (nodeA.nodeType !== nodeB.nodeType) return false;
+  if (nodeA.attributes && nodeB.attributes) {
+    if (nodeA.attributes.length !== nodeB.attributes.length) return false;
+  }
+  if (nodeA.nodeType === TEXT_NODE && nodeB.nodeType === TEXT_NODE) {
+    return nodeA.textContent === nodeB.textContent;
+  }
+  return attributesEqual(nodeA, nodeB);
+  return true;
+}
+
+function attributesEqual(nodeA, nodeB) {
+  for (var index = 0; index < nodeA.attributes.length; index++) {
+    var attr = nodeA.attributes[index];
+    if (nodeB.getAttribute(attr.nodeName) !== attr.nodeValue) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // make mint jsx compatible
