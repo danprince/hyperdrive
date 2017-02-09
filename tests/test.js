@@ -1,3 +1,7 @@
+var Component = Hyperdrive.Component;
+var render = Hyperdrive.render;
+var createElement = Hyperdrive.createElement;
+
 function assert(message, condition) {
   if (!condition) throw new Error(message);
 }
@@ -59,33 +63,33 @@ function test(name, func) {
 test('parseTag', function() {
   deepEqual(
     'should parse single tag name',
-    parseTag('div'),
+    Hyperdrive.parseTag('div'),
     { component: 'div', classes: [] }
   );
 
   deepEqual(
     'should parse class name from string',
-    parseTag('div.test'),
+    Hyperdrive.parseTag('div.test'),
     { component: 'div', classes: ['test'] }
   );
 
   deepEqual(
     'should parse multiple class names from string',
-    parseTag('div.test.foo.bar'),
+    Hyperdrive.parseTag('div.test.foo.bar'),
     { component: 'div', classes: ['test', 'foo', 'bar'] }
   );
 
   deepEqual(
     'should ignore non-string tags',
-    parseTag(null),
+    Hyperdrive.parseTag(null),
     { component: null, classes: [] }
   );
 });
 
-test('$element', function() {
+test('createElement', function() {
   nodeEqual(
     'should render basic elements',
-    $element(['div']),
+    createElement(['div']),
     document.createElement('div')
   );
 
@@ -93,7 +97,7 @@ test('$element', function() {
   div.setAttribute('id', 'foo');
   nodeEqual(
     'should render elements with attributes',
-    $element(['div', { id: 'foo' }]),
+    createElement(['div', { id: 'foo' }]),
     div
   );
 
@@ -101,7 +105,7 @@ test('$element', function() {
   form.appendChild(document.createElement('button'));
   nodeEqual(
     'should render elements with children',
-    $element(['form', null, ['button']]),
+    createElement(['form', null, ['button']]),
     form
   );
 
@@ -109,20 +113,20 @@ test('$element', function() {
   p.setAttribute('class', 'content');
   nodeEqual(
     'should render elements with class shorthand',
-    $element(['p.content', null]),
+    createElement(['p.content', null]),
     p
   );
 
   nodeEqual(
     'should render non-arrays as text nodes',
-    $element('hello'),
+    createElement('hello'),
     document.createTextNode('hello')
   );
 
   var span = document.createElement('span');
   nodeEqual(
     'should return element if it is already a HTMLElement',
-    $element([span]),
+    createElement([span]),
     span
   );
 
@@ -136,7 +140,7 @@ test('$element', function() {
 
   nodeEqual(
     'should render component functions',
-    $element([todo]),
+    createElement([todo]),
     div
   );
 
@@ -149,12 +153,12 @@ test('$element', function() {
 
   nodeEqual(
     'should render component functions with args',
-    $element([button, 'blue']),
+    createElement([button, 'blue']),
     btn
   );
 
   var clicked = false;
-  var btn = $element(['button', {
+  var btn = createElement(['button', {
     onclick: function(event) { clicked = true; }
   }]);
 
@@ -166,63 +170,6 @@ test('$element', function() {
     true
   );
 });
-
-test('events', function() {
-  var flag = true;
-
-  function surrender() {
-    flag = false;
-  }
-
-  var off = on('surrender', surrender);
-
-  deepEqual(
-    'should add event listener',
-    listeners['surrender'],
-    [surrender]
-  );
-
-  emit('surrender');
-
-  equal(
-    'should run event listener',
-    flag,
-    false
-  );
-
-  off();
-
-  deepEqual(
-    'should remove event listener',
-    listeners['surrender'],
-    []
-  );
-});
-
-test('events:wildcards', function() {
-  var flag = true;
-
-  function surrender() {
-    flag = false;
-  }
-
-  var off = on('*', surrender);
-
-  deepEqual(
-    'should add wildcard listener',
-    listeners['*'],
-    [surrender]
-  );
-
-  emit('foo');
-
-  equal(
-    'should run event listener',
-    flag,
-    false
-  );
-});
-
 
 test('render', function() {
   var parent = document.createElement('div');
@@ -262,7 +209,7 @@ test('Component', function() {
     },
 
     increment: function() {
-      this.transact(count => count + 1);
+      this.setState(count => count + 1);
     }
   });
 
@@ -305,7 +252,7 @@ test('Patching', function() {
     },
 
     increment: function() {
-      this.transact(count => count + 1);
+      this.setState(count => count + 1);
     }
   });
 
