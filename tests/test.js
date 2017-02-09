@@ -64,25 +64,25 @@ test('parseTag', function() {
   deepEqual(
     'should parse single tag name',
     Hyperdrive.parseTag('div'),
-    { component: 'div', classes: [] }
+    { name: 'div', classes: [] }
   );
 
   deepEqual(
     'should parse class name from string',
     Hyperdrive.parseTag('div.test'),
-    { component: 'div', classes: ['test'] }
+    { name: 'div', classes: ['test'] }
   );
 
   deepEqual(
     'should parse multiple class names from string',
     Hyperdrive.parseTag('div.test.foo.bar'),
-    { component: 'div', classes: ['test', 'foo', 'bar'] }
+    { name: 'div', classes: ['test', 'foo', 'bar'] }
   );
 
   deepEqual(
     'should ignore non-string tags',
     Hyperdrive.parseTag(null),
-    { component: null, classes: [] }
+    { name: null, classes: [] }
   );
 });
 

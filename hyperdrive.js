@@ -1,53 +1,6 @@
 (function(global) {
   'use strict';
 
-  function Component(component) {
-    var BaseComponent = Object.assign(
-      component,
-      Component.prototype
-    );
-
-    return function createComponent(props) {
-      var instance = Object.create(BaseComponent);
-
-      // autobinding
-      for (var key in component) {
-        if (typeof instance[key] === 'function') {
-          instance[key] = component[key].bind(instance);
-        }
-      }
-
-      instance.state = component.state;
-      instance.props = props;
-
-      var element = instance.render();
-      instance.node = createElement(element);
-      instance.node.backingComponent = instance;
-
-      if (instance.mount) instance.mount();
-
-      return [instance.node, props];
-    }
-  }
-
-  Component.prototype = {
-    setState: function setState(newState) {
-      if (typeof newState === 'function') {
-        this.state = newState(this.state);
-      } else {
-        Object.assign(this.state, newState);
-      }
-
-      this.forceUpdate();
-    },
-    forceUpdate: function forceUpdate() {
-      var newElement = this.render(this.props, this);
-      var newNode = createElement(newElement);
-      newNode.backingComponent = this;
-      this.node = patch(this.node, newNode);
-    }
-  };
-
   function createElement(element) {
     // if the element is not an array then we're probably rendering
     // a child, so assume it has a toString and render it as a text node
@@ -65,17 +18,18 @@
 
     // rendering a "component"
     if (typeof tag === 'function') {
-      var element = tag(props, children);
-      return createElement(element);
+      var component = tag(props, children);
+      return createElement(component);
     }
 
     var parsed = parseTag(tag);
     var node = document.createElement(parsed.name);
+    var classes = parsed.classes;
 
     if (classes.length > 0) {
       props = props || {};
       props['class'] = props['class'] || '';
-      props['class'] += parsed.classes.join(' ');
+      props['class'] += classes.join(' ');
     }
 
     if (props) {
@@ -100,7 +54,56 @@
     return node;
   }
 
+  function Component(component) {
+    var BaseComponent = Object.assign(
+      component,
+      Component.prototype
+    );
+
+    return function createComponent(props) {
+      var instance = Object.create(BaseComponent);
+
+      // autobinding
+      for (var key in component) {
+        if (typeof instance[key] === 'function') {
+          instance[key] = component[key].bind(instance);
+        }
+      }
+
+      instance.state = component.state;
+      instance.props = props;
+
+      var element = instance.render();
+      instance.node = createElement(element);
+
+      if (instance.mount) instance.mount();
+
+      return [instance.node];
+    }
+  }
+
+  Component.prototype = {
+    setState: function setState(newState) {
+      if (typeof newState === 'function') {
+        this.state = newState(this.state);
+      } else {
+        Object.assign(this.state, newState);
+      }
+
+      this.forceUpdate();
+    },
+    forceUpdate: function forceUpdate() {
+      var newElement = this.render(this.props, this);
+      var newNode = createElement(newElement);
+      this.node = patch(this.node, newNode);
+    }
+  };
+
   // utils
+
+  function asArray(list) {
+    return [].slice.call(list);
+  }
 
   function parseTag(tag) {
     if (typeof tag === 'string') {
@@ -115,9 +118,13 @@
     }
 
     return {
-      component: tag,
+      name: tag,
       classes: []
     };
+  }
+
+  function jsx(element, props, ...children) {
+    return [element, props].concat(children);
   }
 
   // render
@@ -125,14 +132,17 @@
   function render(element, parent) {
     var node = createElement(element);
 
-    if (parent.children.length > 0) {
+    if (parent.childNodes.length > 0) {
       parent.innerHTML = '';
     }
 
     parent.appendChild(node);
   }
 
+  // diff & patch
+
   function patch(nodeA, nodeB) {
+    // TODO: could flatten call stacks with a stack based patch impl
     if (areNodesEqual(nodeA, nodeB)) {
       patchChildren(nodeA, nodeB);
       return nodeA;
@@ -143,8 +153,8 @@
   }
 
   function patchChildren(nodeA, nodeB) {
-    // shallow clone nodelists into arrays to prevent mutations to
-    // childNodes from messing up loop indexes.
+    // shallow clone node lists into arrays so that if we end up mutating
+    // childNodes as part of the patch, the loop indexes won't get broken
     var as = asArray(nodeA.childNodes);
     var bs = asArray(nodeB.childNodes);
     var length = Math.max(as.length, bs.length);
@@ -168,59 +178,41 @@
   }
 
   function areNodesEqual(nodeA, nodeB) {
-    var TEXT_NODE = 3;
-
-    if (nodeA.tagName !== nodeB.tagName) {
+    if (nodeA.nodeType !== nodeB.nodeType || nodeA.tagName !== nodeB.tagName) {
       return false;
     }
 
-    if (nodeA.nodeType !== nodeB.nodeType) {
+    if (nodeA.nodeType === Node.TEXT_NODE && nodeA.textContent !== nodeB.textContent) {
       return false;
     }
 
-    if (nodeA.nodeType === TEXT_NODE &&
-        nodeB.nodeType === TEXT_NODE &&
-        nodeA.textContent !== nodeB.textContent) {
+    if (!areAttributesEqual(nodeA, nodeB)) {
       return false;
-    }
-
-    if (nodeA.attributes && nodeB.attributes) {
-      if (nodeA.attributes.length !== nodeB.attributes.length) {
-        return false;
-      }
-
-      if (!areAttributesEqual(nodeA, nodeB)) {
-        return false;
-      }
     }
 
     return true;
   }
 
   function areAttributesEqual(nodeA, nodeB) {
-    for (var index = 0; index < nodeA.attributes.length; index++) {
-      var attr = nodeA.attributes[index];
-      if (nodeB.getAttribute(attr.nodeName) !== attr.nodeValue) {
-        return false;
-      }
+    if (nodeA.attributes === nodeB.attributes) {
+      return true;
     }
 
-    for (var index = 0; index < nodeB.attributes.length; index++) {
-      var attr = nodeB.attributes[index];
-      if (nodeA.getAttribute(attr.nodeName) !== attr.nodeValue) {
+    if (nodeA.attributes.length !== nodeB.attributes.length) {
+      return false;
+    }
+
+    for (var index = 0; index < nodeA.attributes.length; index++) {
+      var attrA = nodeA.attributes[index];
+      var attrB = nodeB.attributes[index];
+
+      if (nodeB.getAttribute(attrA.nodeName) !== attrA.nodeValue ||
+          nodeA.getAttribute(attrB.nodeName) !== attrB.nodeValue) {
         return false;
       }
     }
 
     return true;
-  }
-
-  function jsx(element, props, ...children) {
-    return [element, props].concat(children);
-  }
-
-  function asArray(nodelist) {
-    return [].slice.call(nodelist);
   }
 
   var Hyperdrive = {

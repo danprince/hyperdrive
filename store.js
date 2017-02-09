@@ -1,10 +1,13 @@
 (function(global) {
+  'use strict';
+
   function Store(store) {
     var subscribers = [];
 
     for (var key in store) {
       if (typeof store[key] === 'function') {
         var method = store[key];
+
         store[key] = function storeUpdate() {
           var result = method.apply(store, arguments);
           notify();
@@ -19,9 +22,11 @@
       });
     }
 
-    store.subscribe = function subscribe(func) {
+    function subscribe(func) {
       subscribers.push(func);
-    };
+    }
+
+    store.subscribe = subscribe;
 
     return store;
   }
@@ -30,10 +35,7 @@
     return Component({
       state: store,
       mount: function() {
-        this.unsubscribe = store.subscribe(this.setState);
-      },
-      unmount: function() {
-        this.unsubscribe();
+        store.subscribe(this.setState);
       },
       render: function() {
         var props = Object.assign({}, this.state, this.props);
