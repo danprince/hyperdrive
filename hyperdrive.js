@@ -2,6 +2,10 @@
   'use strict';
 
   function createElement(element) {
+    if (element == null || element == false) {
+      return;
+    }
+
     // if the element is not an array then we're probably rendering
     // a child, so assume it has a toString and render it as a text node
     if (!(element instanceof Array)) {
@@ -35,7 +39,7 @@
     if (props) {
       for (var key in props) {
         if (key.slice(0, 2) == 'on') {
-          node[key] = props[key];
+          node[key.toLowerCase()] = props[key];
         } else if (key === 'style') {
           Object.assign(node.style, props.style);
         } else {
@@ -47,7 +51,7 @@
     if (children) {
       children.forEach(function createChild(child) {
         var childNode = createElement(child);
-        node.appendChild(childNode);
+        if (childNode) node.appendChild(childNode);
       });
     }
 
